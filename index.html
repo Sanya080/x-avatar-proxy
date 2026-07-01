@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup CT Bracket Builder</title>
+<meta name="description" content="Build your World Cup CT bracket with X accounts. Pick winners. Crown a champion. Share it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1F17;
+    --turf:#132E20;
+    --turf-light:#1F6E43;
+    --white:#F5F7F0;
+    --gold:#E8B923;
+    --coral:#FF5D3A;
+    --line:#2E4A3B;
+    --dim:#8FA79A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--white);
+    font-family:'IBM Plex Mono',monospace;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Oswald',sans-serif;text-transform:uppercase;margin:0;}
+  .hidden{display:none !important;}
+  button{font-family:'IBM Plex Mono',monospace;cursor:pointer;border:none;}
+  button:focus-visible,input:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+  /* HERO */
+  .hero{
+    position:relative;
+    padding:64px 24px 48px;
+    text-align:center;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse 60% 80% at 50% -10%, rgba(232,185,35,0.18), transparent 60%),
+      repeating-linear-gradient(0deg, var(--turf) 0px, var(--turf) 78px, var(--turf-light) 78px, var(--turf-light) 80px);
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    display:inline-block;
+    letter-spacing:.18em;
+    font-size:12px;
+    color:var(--gold);
+    background:rgba(232,185,35,0.08);
+    border:1px solid rgba(232,185,35,0.35);
+    padding:6px 14px;
+    border-radius:999px;
+    margin-bottom:22px;
+  }
+  .eyebrow .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--coral);margin-right:8px;animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  #tournamentTitle{
+    font-size:clamp(32px,6vw,64px);
+    font-weight:700;
+    letter-spacing:.01em;
+    line-height:1.05;
+    color:var(--white);
+    text-shadow:0 0 30px rgba(232,185,35,0.25);
+    padding:4px 12px;
+    border-radius:6px;
+  }
+  #tournamentTitle:hover{background:rgba(255,255,255,0.04);}
+  .tagline{color:var(--dim);margin-top:14px;font-size:14px;letter-spacing:.02em;}
+
+  /* PANELS */
+  .panel{max-width:1100px;margin:0 auto;padding:40px 24px;}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .section-head h2{font-size:22px;color:var(--white);}
+  .section-head .step{color:var(--gold);font-size:12px;letter-spacing:.15em;}
+
+  .setup-controls{
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    background:var(--turf);border:1px solid var(--line);border-radius:10px;
+    padding:16px 18px;margin-bottom:24px;
+  }
+  .setup-controls label{font-size:12px;color:var(--dim);display:flex;flex-direction:column;gap:6px;letter-spacing:.05em;text-transform:uppercase;}
+  select#sizeSelect{
+    background:var(--bg);color:var(--white);border:1px solid var(--line);
+    padding:9px 12px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:14px;
+  }
+  #generateSlotsBtn{
+    background:transparent;color:var(--gold);border:1px solid var(--gold);
+    padding:9px 16px;border-radius:6px;font-size:13px;letter-spacing:.04em;
+    transition:background .15s;
+  }
+  #generateSlotsBtn:hover{background:rgba(232,185,35,0.1);}
+
+  .slots-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:12px;margin-bottom:28px;
+  }
+  .slot-card{
+    display:flex;align-items:center;gap:10px;
+    background:var(--turf);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;
+    transition:border-color .2s;
+  }
+  .slot-card.loading{ border-color:var(--gold); }
+  .slot-card.loaded{ border-color:var(--turf-light); }
+  .slot-card.error{ border-color:var(--coral); }
+  .avatar{
+    width:42px;height:42px;border-radius:50%;flex:none;
+    background:var(--bg);border:2px solid var(--line);object-fit:cover;
+    transition:border-color .2s, opacity .3s;
+  }
+  .slot-card input{
+    background:transparent;border:none;color:var(--white);
+    font-family:'IBM Plex Mono',monospace;font-size:14px;width:100%;
+    padding:6px 0;
+  }
+  .slot-card input::placeholder{color:var(--dim);}
+  .slot-card input:focus{outline:none;}
+  .slot-num{font-size:11px;color:var(--dim);min-width:20px;text-align:right;}
+  .slot-status{
+    font-size:10px;white-space:nowrap;min-width:50px;text-align:right;
+  }
+  .slot-status.loading{color:var(--gold);}
+  .slot-status.loaded{color:var(--turf-light);}
+  .slot-status.error{color:var(--coral);}
+
+  .primary-btn{
+    background:var(--gold);color:var(--bg);font-weight:600;
+    padding:14px 26px;border-radius:8px;font-size:14px;letter-spacing:.04em;
+    text-transform:uppercase;font-family:'Oswald',sans-serif;
+    transition:transform .12s, box-shadow .12s;
+  }
+  .primary-btn:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(232,185,35,0.28);}
+  .primary-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+  /* BRACKET */
+  #bracket{
+    display:flex;gap:38px;overflow-x:auto;padding:10px 4px 30px;
+  }
+  .round{
+    display:flex;flex-direction:column;justify-content:space-around;
+    min-width:250px;flex:none;
+  }
+  .round-label{
+    font-size:11px;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;
+    text-align:center;margin-bottom:14px;
+  }
+  .match{
+    background:var(--turf);border:1px solid var(--line);border-radius:10px;
+    margin:14px 0;overflow:hidden;position:relative;
+  }
+  .contender{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .12s;
+  }
+  .contender:last-child{border-bottom:none;}
+  .contender:hover{background:rgba(245,247,240,0.05);}
+  .contender.picked{background:rgba(232,185,35,0.12);}
+  .contender.picked .c-name{color:var(--gold);font-weight:600;}
+  .contender.faded{opacity:.35;}
+  .contender.faded .c-name{text-decoration:line-through;text-decoration-color:var(--coral);}
+  .contender .avatar{width:30px;height:30px;}
+  .c-name{font-size:13px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .contender.empty{cursor:default;color:var(--dim);}
+  .contender.empty .c-name{color:var(--dim);}
+
+  .champion-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:220px;flex:none;}
+  .champion-card{
+    text-align:center;background:linear-gradient(180deg, rgba(232,185,35,0.14), transparent);
+    border:1px solid var(--gold);border-radius:14px;padding:26px 20px;
+  }
+  .champion-card .avatar{width:76px;height:76px;border-color:var(--gold);margin-bottom:14px;box-shadow:0 0 26px rgba(232,185,35,0.4);}
+  .trophy{font-size:26px;margin-bottom:6px;}
+  .champion-card .c-name{font-size:16px;font-family:'Oswald',sans-serif;text-transform:uppercase;color:var(--gold);}
+  .champion-card .c-sub{font-size:11px;color:var(--dim);margin-top:6px;letter-spacing:.1em;}
+
+  /* TICKER / SHARE BAR */
+  .ticker-bar{
+    position:sticky;bottom:0;
+    display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+    background:rgba(11,31,23,0.92);backdrop-filter:blur(6px);
+    border-top:1px solid var(--line);padding:14px 20px;
+  }
+  .ticker-bar button{
+    background:var(--turf);color:var(--white);border:1px solid var(--line);
+    padding:10px 18px;border-radius:8px;font-size:13px;letter-spacing:.03em;
+    display:flex;align-items:center;gap:8px;transition:border-color .15s,color .15s;
+  }
+  #shareBtn{border-color:var(--gold);color:var(--gold);}
+  #shareBtn:hover{background:rgba(232,185,35,0.1);}
+  #exportBtn:hover, #resetBtn:hover{border-color:var(--white);}
+
+  footer.credit{text-align:center;color:var(--dim);font-size:11px;padding:22px;letter-spacing:.05em;}
+  @media(max-width:640px){ .hero{padding:44px 16px 36px;} .panel{padding:28px 16px;} }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="hero">
+    <span class="eyebrow"><span class="dot"></span>LIVE BRACKET TERMINAL</span>
+    <h1 id="tournamentTitle" contenteditable="true" spellcheck="false">WORLD CUP CT BRACKET</h1>
+    <p class="tagline">Enter the X handles. Pick the winners. Crown the champion.</p>
+  </header>
+
+  <section id="setup" class="panel">
+    <div class="section-head">
+      <h2>Set the field</h2>
+      <span class="step">STEP 01</span>
+    </div>
+    <div class="setup-controls">
+      <label>Bracket size
+        <select id="sizeSelect">
+          <option value="8">8 accounts</option>
+          <option value="16" selected>16 accounts</option>
+          <option value="32">32 accounts</option>
+        </select>
+      </label>
+      <button id="generateSlotsBtn">Set up slots</button>
+      <span style="font-size:12px;color:var(--dim);">Enter an X handle in each slot — the avatar loads automatically.</span>
+    </div>
+    <div id="slotsGrid" class="slots-grid"></div>
+    <button id="buildBracketBtn" class="primary-btn" disabled>Build bracket →</button>
+  </section>
+
+  <section id="bracketSection" class="panel hidden">
+    <div class="section-head">
+      <h2>The bracket</h2>
+      <span class="step">STEP 02 — click a name to advance it</span>
+    </div>
+    <div id="bracket"></div>
+  </section>
+
+  <div id="shareBar" class="ticker-bar hidden">
+    <button id="resetBtn">↺ Start over</button>
+    <button id="exportBtn">⬇ Export image</button>
+    <button id="shareBtn">𝕏 Share on X</button>
+  </div>
+
+  <footer class="credit">World Cup CT Bracket Builder — unofficial, made for the timeline.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function(){
+  // ═══════════════════════════════════════════════════════════════════════
+  //  CONFIG — change this to your proxy server URL
+  // ═══════════════════════════════════════════════════════════════════════
+  const PROXY_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : 'https://your-domain.com';     // ← ЗАМІНИТИ НА РЕАЛЬНИЙ ДОМЕН
+
+  const slotsGrid = document.getElementById('slotsGrid');
+  const sizeSelect = document.getElementById('sizeSelect');
+  const generateSlotsBtn = document.getElementById('generateSlotsBtn');
+  const buildBracketBtn = document.getElementById('buildBracketBtn');
+  const bracketSection = document.getElementById('bracketSection');
+  const bracketEl = document.getElementById('bracket');
+  const shareBar = document.getElementById('shareBar');
+  const setupSection = document.getElementById('setup');
+  const titleEl = document.getElementById('tournamentTitle');
+
+  let slotHandles = [];
+  let advancers = [];
+  let totalRounds = 0;
+  const avatarCache = {};
+
+  // ─── Helpers ─────────────────────────────────────────────────────────
+
+  function cleanHandle(h) {
+    return (h||'').trim().replace(/^@/,'');
+  }
+
+  function placeholderSrc() {
+    return 'https://ui-avatars.com/api/?name=%3F&background=132E20&color=8FA79A&size=64';
+  }
+
+  function initialsSrc(handle) {
+    const name = encodeURIComponent((handle||'?').replace(/^@/,'').trim() || '?');
+    return `https://ui-avatars.com/api/?name=${name}&background=E8B923&color=0B1F17&bold=true&size=128`;
+  }
+
+  // ─── Avatar via proxy ─────────────────────────────────────────────────
+
+  async function fetchAvatarFromProxy(handle) {
+    const clean = cleanHandle(handle);
+    if (!clean) return null;
+
+    try {
+      const res = await fetch(`${PROXY_URL}/avatar/${encodeURIComponent(clean)}`, {
+        mode: 'cors',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.avatar_url) {
+          avatarCache[clean] = data.avatar_url;
+          return data.avatar_url;
+        }
+      }
+    } catch (_) { /* fall through */ }
+    return null;
+  }
+
+  async function setAvatar(img, handle, statusEl, card) {
+    const clean = cleanHandle(handle);
+    if (!clean) {
+      img.src = placeholderSrc();
+      img.style.opacity = '1';
+      if (card) card.className = 'slot-card';
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'slot-status'; }
+      return;
+    }
+
+    // Loading state
+    img.style.opacity = '0.35';
+    if (card) card.className = 'slot-card loading';
+    if (statusEl) { statusEl.textContent = '⌛'; statusEl.className = 'slot-status loading'; }
+
+    // Check cache
+    if (avatarCache[clean]) {
+      img.src = avatarCache[clean];
+      img.style.opacity = '1';
+      if (card) card.className = 'slot-card loaded';
+      if (statusEl) { statusEl.textContent = '✓'; statusEl.className = 'slot-status loaded'; }
+      return;
+    }
+
+    // Fetch from proxy
+    const proxyUrl = await fetchAvatarFromProxy(clean);
+    if (proxyUrl) {
+      img.src = proxyUrl;
+    } else {
+      // Fallback: direct unavatar
+      img.src = `https://unavatar.io/x/${encodeURIComponent(clean)}`;
+    }
+    img.style.opacity = '1';
+
+    img.onload = function() {
+      if (card) card.className = 'slot-card loaded';
+      if (statusEl) { statusEl.textContent = '✓'; statusEl.className = 'slot-status loaded'; }
+    };
+
+    img.onerror = function() {
+      const fallback = initialsSrc(clean);
+      img.src = fallback;
+      img.onerror = null;
+      if (card) card.className = 'slot-card loaded';
+      if (statusEl) { statusEl.textContent = '✦'; statusEl.className = 'slot-status loaded'; }
+      if (!avatarCache[clean]) avatarCache[clean] = fallback;
+    };
+  }
+
+  // ─── Slots ────────────────────────────────────────────────────────────
+
+  function buildSlots(n) {
+    slotsGrid.innerHTML = '';
+    slotHandles = new Array(n).fill('');
+    for (let i = 0; i < n; i++) {
+      const card = document.createElement('div');
+      card.className = 'slot-card';
+      card.innerHTML = `
+        <span class="slot-num">${i+1}</span>
+        <img class="avatar" src="${placeholderSrc()}" alt="">
+        <input type="text" placeholder="@handle" data-idx="${i}" spellcheck="false" autocomplete="off">
+        <span class="slot-status"></span>
+      `;
+      slotsGrid.appendChild(card);
+    }
+    buildBracketBtn.disabled = true;
+    slotsGrid.addEventListener('input', onSlotInput);
+  }
+
+  let debounceTimers = {};
+
+  function onSlotInput(e) {
+    if (e.target.tagName !== 'INPUT') return;
+    const idx = +e.target.dataset.idx;
+    const val = e.target.value;
+    slotHandles[idx] = val;
+    clearTimeout(debounceTimers[idx]);
+    debounceTimers[idx] = setTimeout(() => {
+      const handle = cleanHandle(val);
+      const card = e.target.closest('.slot-card');
+      const img = card.querySelector('.avatar');
+      const statusEl = card.querySelector('.slot-status');
+      if (handle) {
+        setAvatar(img, handle, statusEl, card);
+      } else {
+        img.src = placeholderSrc();
+        img.style.opacity = '1';
+        card.className = 'slot-card';
+        if (statusEl) { statusEl.textContent = ''; statusEl.className = 'slot-status'; }
+      }
+      checkReady();
+    }, 500);
+  }
+
+  function checkReady() {
+    const filled = slotHandles.filter(h => cleanHandle(h).length > 0).length;
+    buildBracketBtn.disabled = (filled < slotHandles.length);
+  }
+
+  generateSlotsBtn.addEventListener('click', () => {
+    buildSlots(+sizeSelect.value);
+    bracketSection.classList.add('hidden');
+    shareBar.classList.add('hidden');
+  });
+
+  // ─── Bracket ──────────────────────────────────────────────────────────
+
+  buildBracketBtn.addEventListener('click', buildBracket);
+
+  function buildBracket() {
+    const participants = slotHandles.map((h, i) => {
+      const handle = cleanHandle(h) || `Player${i+1}`;
+      const cachedUrl = avatarCache[handle] || `https://unavatar.io/x/${encodeURIComponent(handle)}`;
+      return { name: '@' + handle, avatar: cachedUrl };
+    });
+    advancers = [participants];
+    totalRounds = Math.log2(participants.length);
+    for (let r = 1; r <= totalRounds; r++) {
+      advancers.push(new Array(advancers[r-1].length / 2).fill(null));
+    }
+    renderBracket();
+    bracketSection.classList.remove('hidden');
+    shareBar.classList.remove('hidden');
+    bracketSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function pick(round, matchIdx, side) {
+    const chosen = advancers[round][matchIdx * 2 + side];
+    if (!chosen) return;
+    advancers[round + 1][matchIdx] = chosen;
+    for (let r = round + 2; r <= totalRounds; r++) {
+      advancers[r] = new Array(advancers[r-1].length / 2).fill(null);
+    }
+    renderBracket();
+  }
+
+  const roundNames = (total) => {
+    const names = [];
+    for (let r = 0; r < total; r++) {
+      const remaining = Math.pow(2, total - r);
+      if (remaining === 2) names.push('Final');
+      else if (remaining === 4) names.push('Semifinals');
+      else if (remaining === 8) names.push('Quarterfinals');
+      else names.push(`Round of ${remaining}`);
+    }
+    return names;
+  };
+
+  function contenderHTML(p, extraClass) {
+    if (!p) {
+      return `<div class="contender empty"><img class="avatar" src="${placeholderSrc()}" alt=""><span class="c-name">TBD</span></div>`;
+    }
+    const handle = p.name.replace(/^@/,'');
+    const src = avatarCache[handle] || `https://unavatar.io/x/${encodeURIComponent(handle)}`;
+    return `<div class="contender ${extraClass}"><img class="avatar" src="${src}" data-handle="${handle}" alt=""><span class="c-name">${p.name}</span></div>`;
+  }
+
+  function attachBracketFallback(img) {
+    const handle = img.dataset.handle;
+    if (!handle) return;
+    img.addEventListener('error', function onErr() {
+      img.removeEventListener('error', onErr);
+      const fallback = initialsSrc(handle);
+      img.src = fallback;
+      if (!avatarCache[handle]) avatarCache[handle] = fallback;
+    });
+  }
+
+  function renderBracket() {
+    bracketEl.innerHTML = '';
+    const names = roundNames(totalRounds);
+    for (let r = 0; r < totalRounds; r++) {
+      const roundDiv = document.createElement('div');
+      roundDiv.className = 'round';
+      const label = document.createElement('div');
+      label.className = 'round-label';
+      label.textContent = names[r];
+      roundDiv.appendChild(label);
+      const source = advancers[r];
+      for (let m = 0; m < source.length / 2; m++) {
+        const p1 = source[m * 2], p2 = source[m * 2 + 1];
+        const winner = advancers[r + 1][m];
+        const matchDiv = document.createElement('div');
+        matchDiv.className = 'match';
+        const c1class = winner ? (winner === p1 ? 'picked' : 'faded') : '';
+        const c2class = winner ? (winner === p2 ? 'picked' : 'faded') : '';
+        matchDiv.innerHTML = contenderHTML(p1, c1class) + contenderHTML(p2, c2class);
+        const [c1el, c2el] = matchDiv.querySelectorAll('.contender');
+        if (p1 && !c1el.classList.contains('empty')) c1el.addEventListener('click', () => pick(r, m, 0));
+        if (p2 && !c2el.classList.contains('empty')) c2el.addEventListener('click', () => pick(r, m, 1));
+        matchDiv.querySelectorAll('.avatar[data-handle]').forEach(attachBracketFallback);
+        roundDiv.appendChild(matchDiv);
+      }
+      bracketEl.appendChild(roundDiv);
+    }
+    // Champion
+    const champ = advancers[totalRounds][0];
+    const champWrap = document.createElement('div');
+    champWrap.className = 'champion-wrap';
+    if (champ) {
+      const handle = champ.name.replace(/^@/,'');
+      const src = avatarCache[handle] || `https://unavatar.io/x/${encodeURIComponent(handle)}`;
+      champWrap.innerHTML = `
+        <div class="champion-card">
+          <div class="trophy">🏆</div>
+          <img class="avatar" src="${src}" data-handle="${handle}" alt="">
+          <div class="c-name">${champ.name}</div>
+          <div class="c-sub">CHAMPION</div>
+        </div>`;
+      const champImg = champWrap.querySelector('.avatar[data-handle]');
+      if (champImg) attachBracketFallback(champImg);
+    } else {
+      champWrap.innerHTML = `
+        <div class="champion-card">
+          <div class="trophy">🏆</div>
+          <div class="c-name" style="color:var(--dim)">TBD</div>
+          <div class="c-sub">pick winners to reveal</div>
+        </div>`;
+    }
+    bracketEl.appendChild(champWrap);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    bracketSection.classList.add('hidden');
+    shareBar.classList.add('hidden');
+    setupSection.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const target = document.getElementById('app');
+    html2canvas(target, { backgroundColor: '#0B1F17', useCORS: true }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'world-cup-ct-bracket.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    const title = titleEl.textContent.trim() || 'World Cup CT Bracket';
+    const champ = totalRounds && advancers[totalRounds][0];
+    const text = champ
+      ? `${title} 🏆 Champion: ${champ.name}\n\nBuild your own bracket:`
+      : `Building my ${title} 👇`;
+    const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+    window.open(url, '_blank');
+  });
+
+  // Init
+  buildSlots(16);
+})();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a145ce186deceeaf',t:'MTc4MjkxMzA0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
